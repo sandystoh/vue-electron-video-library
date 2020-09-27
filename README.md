@@ -1,4 +1,4 @@
-# vue-video-lib
+# vue-electron-video-library
 
 ## Project setup
 ```
