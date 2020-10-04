@@ -10,17 +10,19 @@
       :style="{
         minWidth: minSize,
         maxWidth: maxSize,
-        width: resizeValue + '%'
+        width: resizeValue + '%',
       }"
     >
-      <slot name="resizable"/>
+      <slot name="resizable" />
     </section>
-    <div class="resizer" @mousedown="onMouseDown"/>
-    <section class="pane" 
+    <div class="resizer" @mousedown="onMouseDown" />
+    <section
+      class="pane"
       :style="{
-        width: 'calc(100% - ' + resizeValue + '%)'
-      }">
-      <slot/>
+        width: 'calc(100% - ' + resizeValue + '%)',
+      }"
+    >
+      <slot />
     </section>
   </div>
 </template>
@@ -31,18 +33,24 @@ export default {
   props: {
     minSize: {
       type: String,
-      default: "0rem"
+      default: "0rem",
     },
     maxSize: {
       type: String,
-      default: "calc(100% - 24rem)"
+      default: "calc(100% - 24rem)",
     },
     resizeType: {
       validator(value) {
         return ["vertical", "horizontal"].indexOf(value) >= 0;
       },
-      default: "vertical"
-    }
+      default: "vertical",
+    },
+  },
+  created() {
+    window.addEventListener("resize", this.windowResized);
+  },
+  destroyed() {
+    window.removeEventListener("resize", this.windowResized);
   },
   computed: {
     userSelect() {
@@ -58,10 +66,13 @@ export default {
   data() {
     return {
       isActive: false,
-      resizeValue: null
+      resizeValue: 0,
     };
   },
   methods: {
+    windowResized() {
+      this.$root.$emit("windowresize", this.resizeValue);
+    },
     onMouseDown() {
       this.isActive = true;
     },
@@ -88,10 +99,10 @@ export default {
 
         if (resizeValue < 100) {
           this.resizeValue = resizeValue;
-          this.$store.commit('changeLeftPanelWidth', resizeValue);
+          this.$store.commit("changeLeftPanelWidth", resizeValue);
         }
       }
-    }
+    },
   },
   watch: {
     panelSizeChange(newSize) {

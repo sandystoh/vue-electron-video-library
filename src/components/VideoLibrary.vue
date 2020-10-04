@@ -225,7 +225,7 @@
                 </v-list-item-content>
                 <v-list-item-action> </v-list-item-action>
                 <v-list-item-action>
-                  <v-btn icon @click="openVideo(f)">
+                  <v-btn icon @click="playVideoPlaylist(f)">
                     <v-icon color="grey lighten-1">
                       mdi-play-circle-outline</v-icon
                     >
@@ -469,6 +469,14 @@ export default {
     loadImage(path) {
       const image1 = document.getElementById("image-1");
       image1.src = `appName-safe-file-protocol://${path}`;
+    },
+    playVideoPlaylist(file) {
+      const playlist = [];
+      this.sortedLibrary.forEach(bin => {
+        playlist.push(...bin.videos);
+      })
+      this.$store.commit("changePlaylist", { name: "Library", playlist})
+      this.$store.commit("changeFile", file);
     },
     openVideo(file) {
       // console.log('sidebar', file);

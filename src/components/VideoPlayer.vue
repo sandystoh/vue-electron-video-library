@@ -27,11 +27,11 @@ export default {
       },
     },
   },
-  data() {
-    return {
-      player: null,
-    };
-  },
+  data: () => ({
+    player: null,
+    activeFile: null,
+    playlist: [],
+  }),
   methods: {
     playerInitialize() {
       this.player = videojs(
@@ -54,7 +54,7 @@ export default {
     },
 
     playerSetSrc(url) {
-      console.log('setsrc')
+      console.log("setsrc");
       this.player.src(url);
     },
     playerSetVolume(float) {
@@ -88,8 +88,9 @@ export default {
     },
 
     playerSetupEvents() {
-      this.player.on("ended", function () {
+      this.player.on("ended", () => {
         window.playerEvents.playerEventEnded();
+        this.nextVideo();
       });
       this.player.on("volumechange", function () {
         window.playerEvents.playerEventVolume();
@@ -97,6 +98,37 @@ export default {
       this.player.on("error", function () {
         window.playerEvents.playerEventError();
       });
+      this.$root.$on("trackbarprev", () => {
+        this.prevVideo();
+      });
+      this.$root.$on("trackbarplaypause", () => {
+        if (this.playerGetPaused()) {
+          this.playerPlay();
+          this.$store.commit("changePausedStatus", false);
+        } else {
+          this.playerPause();
+          this.$store.commit("changePausedStatus", true);
+        }
+      });
+      this.$root.$on("trackbarnext", () => {
+        this.nextVideo();
+      });
+    },
+    prevVideo() {
+      const activeIndex = this.playlist.findIndex(
+        (f) => f.id === this.activeFile.id
+      );
+      if (activeIndex > -1 && activeIndex !== 0) {
+        this.$store.commit("changeFile", this.playlist[activeIndex - 1]);
+      }
+    },
+    nextVideo() {
+      const activeIndex = this.playlist.findIndex(
+        (f) => f.id === this.activeFile.id
+      );
+      if (activeIndex > -1 && activeIndex !== this.playlist.length - 1) {
+        this.$store.commit("changeFile", this.playlist[activeIndex + 1]);
+      }
     },
   },
   mounted() {
@@ -111,12 +143,20 @@ export default {
     videoChange() {
       return this.$store.state.file;
     },
+    playlistChange() {
+      return this.$store.state.playlist;
+    },
   },
   watch: {
     videoChange(newVideo) {
       // console.log('local-resource://'+newVideo.filePath);
-      const url = 'local-resource://'+newVideo.filePath;
+      this.activeFile = newVideo;
+      const url = "local-resource://" + newVideo.filePath;
       this.player.src(url);
+      this.$store.commit("changePausedStatus", false);
+    },
+    playlistChange(newPlaylist) {
+      this.playlist = newPlaylist.playlist;
     },
   },
 };

@@ -15,8 +15,16 @@
         </template>
         <template v-slot>
           <div class="sidebar" v-bind:class="{ 'now-playing': isHome }">
-            <div class="video-preview" v-bind:class="{ 'video-full': isHome }"><VideoPreview /></div>
-            <div class="playlist" v-bind:class="{ 'playlist-full': isHome }"><Playlist /></div>
+            <div class="video-preview" v-bind:class="{ 'video-full': isHome }">
+              <VideoPreview />
+            </div>
+            <div
+              class="playlist"
+              v-bind:style="{ height: tracklistHeight + 'px' }"
+              v-bind:class="{ 'playlist-full': isHome }"
+            >
+              <Playlist />
+            </div>
           </div>
         </template>
       </resizable-pane>
@@ -33,6 +41,7 @@
   position: relative;
   color: white;
   overflow: hidden;
+  background-color: #1e1e1e;
 }
 .home {
   width: 100%;
@@ -49,6 +58,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  height: 100%;
 }
 .now-playing {
   flex-direction: row;
@@ -59,12 +69,12 @@
 }
 .playlist {
   font-family: "Fira Sans", sans-serif;
-  height: 100%;
   background-color: #1e1e1e;
   color: #fff;
 }
 .playlist-full {
   width: 24rem;
+  height: 100% !important;
 }
 .video-preview {
   font-family: "Fira Sans", sans-serif;
@@ -116,12 +126,30 @@ export default {
     Trackbar,
     ResizablePane,
   },
-  data() {
-    return {
-      isHome: true,
-    };
+  data: () => ({
+    isHome: true,
+    tracklistHeight: window.innerHeight - 75 - 48,
+  }),
+  methods: {
+    resized(leftPanelWidth) {
+      const rightPanelWidth =
+        leftPanelWidth == 100
+          ? 384
+          : (window.innerWidth * (100 - leftPanelWidth)) / 100;
+      const videoHeight = (rightPanelWidth * 9) / 16;
+      this.tracklistHeight = window.innerHeight - videoHeight - 75 - 48;
+    },
   },
-  methods: {},
+  computed: {
+    resizeChange() {
+      return this.$store.state.leftPaneWidth;
+    },
+  },
+  mounted() {
+    this.$root.$on("windowresize", (leftPanelWidth) => {
+      this.resized(leftPanelWidth);
+    });
+  },
   watch: {
     $route() {
       if (this.$route.path === "/") {
@@ -129,6 +157,14 @@ export default {
       } else {
         this.isHome = false;
       }
+    },
+    resizeChange(leftPanelWidth) {
+      const rightPanelWidth =
+        leftPanelWidth == 100
+          ? 384
+          : (window.innerWidth * (100 - leftPanelWidth)) / 100;
+      const videoHeight = (rightPanelWidth * 9) / 16;
+      this.tracklistHeight = window.innerHeight - videoHeight - 75 - 48;
     },
   },
 };

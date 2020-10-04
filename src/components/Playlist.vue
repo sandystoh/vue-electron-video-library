@@ -1,30 +1,27 @@
 <template>
-  <div style="width:100%; height:100%">
-    <v-toolbar
-      dense
-      shaped
-      elevation="0"
-      class="sidebar__search"
-    >
-      <v-btn icon @click="openFolder()">
-        <v-icon>mdi-folder-open-outline</v-icon>
-      </v-btn>
-      <v-text-field hide-details single-line></v-text-field>
+  <div style="width: 100%; height: 100%">
+    <v-toolbar dark dense shaped elevation="0" class="playlist__search">
       <v-btn icon>
-        <v-icon>mdi-magnify</v-icon>
+        <v-icon>mdi-playlist-music</v-icon>
       </v-btn>
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on }"
+          ><div v-on="on" class="playlist__title">
+            {{ playlistName }}
+          </div></template>
+        <span>{{ playlistName }}</span>
+      </v-tooltip>
     </v-toolbar>
-    <v-card dark class="mx-auto sidebar__listing" max-width="100%">
+    <v-card dark class="mx-auto playlist__listing" max-width="100%">
       <v-list shaped dark>
-        <v-subheader @click="openFolder()"
-          ><span class="cursor-pointer">{{ dir }}</span></v-subheader
-        >
         <v-list-item
-          v-for="f in files"
+          v-for="f in playlist"
           @click="openVideo(f)"
+          v-bind:id="f.id"
           v-bind:key="f.id"
           two-line
           link
+          v-bind:class="{ playlist__highlight: f.id === activeFile.id }"
         >
           <v-list-item-avatar>
             <v-icon>fas fa-film</v-icon>
@@ -35,7 +32,7 @@
           </v-list-item-content>
           <v-list-item-action>
             <v-btn icon>
-              <v-icon color="grey lighten-1"> mdi-playlist-plus</v-icon>
+              <v-icon color="grey lighten-1"> mdi-playlist-minus</v-icon>
             </v-btn>
           </v-list-item-action>
         </v-list-item>
@@ -45,7 +42,7 @@
   </div>
 </template>
 <style lang="scss">
-.sidebar {
+.playlist {
   &__search {
     position: absolute;
     top: 0;
@@ -53,10 +50,24 @@
     z-index: 10;
     width: 100%;
   }
+  &__title {
+    width: 300px;
+    overflow: hidden;
+    white-space: nowrap;
+    display: inline-block;
+    text-overflow: ellipsis;
+  }
+  &__highlight {
+    background-color: #333;
+  }
   &__listing {
     width: 100%;
-    height: calc(100vh - 48px - 75px - 45px);
+    height: calc(100% - 48px);
+    overflow: hidden;
     overflow-y: scroll;
+    .v-list {
+      max-height: 100vh;
+    }
     /* total width */
     &::-webkit-scrollbar {
       background-color: #1e1e1e;
@@ -83,35 +94,45 @@
 }
 </style>
 <script>
-import { ipcRenderer } from "electron";
 export default {
   name: "Playlist",
 
   data: () => ({
-    dir: "C:/test",
-    files: [],
-    file: "",
+    playlistName: "",
+    activeFile: null,
+    playlist: [],
   }),
-  mounted() {
-    ipcRenderer.on("open-folder-dialog-reply", (event, data) => {
-      this.dir = data.dir;
-      this.files = data.files;
-      // console.log(this.files);
-    });
-  },
+  mounted() {},
   methods: {
-    openFolder() {
-      ipcRenderer.send("selectDirectory");
-    },
     loadImage(path) {
       const image1 = document.getElementById("image-1");
       image1.src = `appName-safe-file-protocol://${path}`;
     },
     openVideo(file) {
-      // console.log('sidebar', file);
-      this.$store.commit('changeFile', file);
-      // console.log('sidebar', this.$store.state.file.name);
-    }
+      this.$store.commit("changeFile", file);
+    },
+  },
+  computed: {
+    videoChange() {
+      return this.$store.state.file;
+    },
+    playlistChange() {
+      return this.$store.state.playlist;
+    },
+  },
+  watch: {
+    videoChange(newVideo) {
+      this.activeFile = newVideo;
+      setTimeout(() => {
+        document.getElementById(newVideo.id).scrollIntoView({
+          behavior: "smooth",
+        });
+      }, 200);
+    },
+    playlistChange(newPlaylist) {
+      this.playlistName = newPlaylist.name;
+      this.playlist = newPlaylist.playlist;
+    },
   },
 };
 </script>
