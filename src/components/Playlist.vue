@@ -31,9 +31,9 @@
             <v-list-item-subtitle>{{ f.size }}</v-list-item-subtitle>
           </v-list-item-content>
           <v-list-item-action>
-            <v-btn icon>
+            <!-- <v-btn icon>
               <v-icon color="grey lighten-1"> mdi-playlist-minus</v-icon>
-            </v-btn>
+            </v-btn> -->
           </v-list-item-action>
         </v-list-item>
       </v-list>

@@ -8,8 +8,10 @@ ffmpeg.setFfmpegPath(path.join(__dirname, 'binaries', 'ffmpeg'));
 ffmpeg.setFfprobePath(path.join(__dirname, 'binaries', 'ffprobe'));
 import { convertBytes } from '../utilities/file-size'
 const walk = require('walk');
-import { nanoid } from 'nanoid'
-const files = [];
+const sharp = require('sharp');
+const fs = require('fs');
+import { nanoid } from 'nanoid';
+var glob = require("glob");
 
 const downloadFFBinaries = () => {
   const dest = __dirname + '/binaries';
@@ -25,6 +27,40 @@ const openFolderListener = (app, db) => {
     dialog.showOpenDialog(window, { properties: ['openDirectory'] })
       .then(result => {
         event.sender.send('get-directory-dialog-reply', { dir: result.filePaths[0] })
+      });
+  });
+  ipcMain.on('getImageFilePath', function (event, data) {
+    const window = BrowserWindow.getFocusedWindow();
+    console.log(data)
+    dialog.showOpenDialog(window, {
+      filters: [
+        { name: 'Images', extensions: ['jpg', 'png', 'gif'] }
+      ],
+      properties: ['openFile']
+    })
+      .then(result => {
+        let fileName = data.id + '-custom-' + nanoid(4) + '.png';
+        sharp(result.filePaths[0]).resize({ width: 320, height: 180, fit: 'cover' }).png()
+        .toFile(path.join(app.getPath('userData'), 'thumbnails', fileName))
+          .then(function (newFileInfo) {
+            event.sender.send('open-image-file-dialog-reply', { image: fileName })
+          })
+          .catch(function (err) {
+            event.sender.send('open-image-file-dialog-reply', { image: null })
+            console.log("Sharp Error", err);
+          });
+      });
+  });
+  ipcMain.on('getVideoFilePath', function (event, data) {
+    const window = BrowserWindow.getFocusedWindow();
+    dialog.showOpenDialog(window, {
+      filters: [
+        { name: 'Videos', extensions: ['mkv', 'avi', 'mp4', 'm4v'] }
+      ],
+      properties: ['openFile']
+    })
+      .then(result => {
+        event.sender.send('open-video-file-dialog-reply', { video: result.filePaths })
       });
   });
   ipcMain.on('getFilePaths', function (event, data) {
@@ -69,7 +105,41 @@ const openFolderListener = (app, db) => {
       .catch(error => {
         console.log('Could not get file path')
       })
+  }); 
+  ipcMain.on('editVideoDetails', function (event, data) {
+    console.log(data);
+    if (data.isFileChanged) {
+      processFile(data.file.filePath, data.file, false, data.file.id).then(newFile => {
+        data.file.name = newFile.name;
+        data.file.size = newFile.size;
+        data.file.duration = newFile.duration;
+        editFile(event, data.file);
+      })
+      .catch(err => {
+        event.sender.send('edit-file-dialog-reply', { isSuccess: false })
+      })
+    } else {
+      editFile(event, data.file);
+    }
   });
+
+  const editFile = (event, file) => {
+    if(file && file.id) {
+      db.update(file.id, file).then(() => {
+        let cleanupImages = [];
+        glob(app.getPath('userData') + '/thumbnails/' + file.id + '-custom-*.png', function (er, files) {
+          cleanupImages = files;
+          cleanupImages.filter(f => !f.includes(file.thumbnailPath)).forEach(img => {
+            fs.unlinkSync(img);
+          });
+        });
+        event.sender.send('edit-file-dialog-reply', { isSuccess: true })
+      }).catch(err => {
+        event.sender.send('edit-file-dialog-reply', { isSuccess: false })
+      });
+    }
+
+  }
 
   const crawlFoldersAndImport = (event, folderPath, data, replyPath) => {
     const fileList = [];
@@ -96,7 +166,7 @@ const openFolderListener = (app, db) => {
       event.sender.send(replyPath, { files: fileList })
     });
   };
-  const processFile = (filePath, data) => {
+  const processFile = (filePath, data, isCreate = true, oldID = null) => {
     return new Promise((resolve, reject) => {
       console.log(isValidVideoExtension(filePath))
       if (isValidVideoExtension(filePath)) {
@@ -106,7 +176,7 @@ const openFolderListener = (app, db) => {
             reject();
           }
           else {
-            const id = nanoid();
+            const id = isCreate ? nanoid() : oldID;
             const proc = new ffmpeg(filePath)
               .takeScreenshots({
                 count: 1,
@@ -128,18 +198,23 @@ const openFolderListener = (app, db) => {
                       duration: Math.floor(metadata.format.duration),
                       artist: data.artist || '',
                       album: data.album || '',
-                      genre: data.genre || ''
+                      genre: data.genre || '',
+                      thumbnailPath: id + '.png'
                     };
                     console.log(file);
-                    db.create(file)
-                      .then((data) => {
-                        console.log('resolve', data)
-                        resolve(file);
-                      })
-                      .catch((err) => {
-                        console.log("err", err);
-                        reject();
-                      });
+                    if(isCreate) {
+                      db.create(file)
+                        .then((data) => {
+                          console.log('resolve', data)
+                          resolve(file);
+                        })
+                        .catch((err) => {
+                          console.log("err", err);
+                          reject();
+                        });
+                    } else {
+                      resolve(file);
+                    }
                   } else {
                     // fileList.push(docs);
                     reject();

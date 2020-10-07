@@ -3,8 +3,8 @@ export default {
     bind(el, binding) {
         try {
             const { value } = binding;
-            const loader = 'src/img/loading.gif';
-            const fallBackImage = 'src/assets/default-video.png';
+            const loader = require('@/assets/loading.gif');
+            const fallBackImage = require('@/assets/default-video.png');
             const img = new Image();
             let loading = loader;
             let error = fallBackImage;

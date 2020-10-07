@@ -34,6 +34,10 @@ class VideoStore {
         return this.db.findOne({_id}).exec()
     }
 
+    update(id, record) {
+        return this.db.update({ id }, record)
+    }
+
     findOne(query) {
         return this.db.findOne(query)
     }

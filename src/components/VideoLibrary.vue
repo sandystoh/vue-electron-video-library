@@ -17,7 +17,9 @@
         </template>
         <v-card>
           <v-card-title>
-            <span class="headline">Import Video Folder or Files to Library</span>
+            <span class="headline"
+              >Import Video Folder or Files to Library</span
+            >
           </v-card-title>
           <v-card-text>
             <v-container>
@@ -196,12 +198,12 @@
             }}</v-subheader>
             <v-list shaped dark>
               <v-list-item
-                v-for="f in header.videos"
+                v-for="(f, i) of header.videos"
                 v-bind:key="f.id"
                 two-line
               >
                 <img
-                  :src="'local-resource://' + thumbPath + f.id + '.png'"
+                  :src="'local-resource://' + thumbPath + '/' + f.thumbnailPath"
                   width="160"
                   v-image-fall-back
                   style="margin-right: 8px"
@@ -213,15 +215,144 @@
                     <span v-if="f.album">| {{ f.album }}</span>
                     <span v-if="f.year">| {{ f.year }}</span>
                   </v-list-item-subtitle>
-                  <v-list-item-subtitle
-                    ><span v-if="f.artist">{{ f.artist }} </span>|
+                  <v-list-item-subtitle>
+                    <v-dialog
+                      v-model="editDialog[i]"
+                      persistent
+                      max-width="900px"
+                    >
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                          icon
+                          v-bind="attrs"
+                          v-on="on"
+                          @click="openEditDialog(f)"
+                        >
+                          <v-icon>mdi-pencil-circle-outline</v-icon>
+                        </v-btn>
+                      </template>
+                      <v-card>
+                        <v-card-title>
+                          <span class="headline">Edit File Details</span>
+                        </v-card-title>
+                        <v-card-text>
+                          <v-container>
+                            <v-row>
+                              <v-col cols="3">
+                                <img
+                                  :src="
+                                    'local-resource://' +
+                                    thumbPath +
+                                    '/' +
+                                    editedFile.thumbnailPath
+                                  "
+                                  width="160"
+                                  v-image-fall-back
+                                  style="margin-right: 8px"
+                                />
+                              </v-col>
+                              <v-col cols="4">
+                                <v-btn
+                                  dark
+                                  class="ma-2"
+                                  color="#555"
+                                  @click="getImagePath()"
+                                >
+                                  <v-icon>mdi-image-search</v-icon
+                                  ><span>Choose Thumbnail (16:9)</span>
+                                </v-btn>
+                              </v-col>
+                              <v-col cols="4">
+                                <v-btn
+                                  dark
+                                  class="ma-2"
+                                  color="#555"
+                                  @click="getNewFilePath()"
+                                >
+                                  <v-icon>mdi-file-document-edit</v-icon
+                                  ><span>Change File Path</span>
+                                </v-btn>
+                              </v-col>
+                              <v-col cols="12">
+                                {{ editedFile.filePath }}
+                              </v-col>
+                              <v-col cols="6">
+                                <v-text-field
+                                  v-model="editedFile.displayName"
+                                  label="Display Name"
+                                ></v-text-field>
+                              </v-col>
+                              <v-col cols="6">
+                                <v-combobox
+                                  v-model="editedFile.artist"
+                                  :items="artistList"
+                                  label="Artist"
+                                >
+                                </v-combobox>
+                              </v-col>
+                              <v-col cols="6">
+                                <v-combobox
+                                  v-model="editedFile.album"
+                                  :items="albumList"
+                                  label="Album"
+                                >
+                                </v-combobox>
+                              </v-col>
+                              <v-col cols="6">
+                                <v-combobox
+                                  v-model="editedFile.genre"
+                                  :items="genres"
+                                  label="Genre"
+                                >
+                                </v-combobox>
+                              </v-col>
+                              <v-col cols="6">
+                                <v-text-field
+                                  v-model="editedFile.period"
+                                  label="Period"
+                                ></v-text-field>
+                              </v-col>
+                              <v-col cols="6">
+                                <v-text-field
+                                  v-model="editedFile.releaseYear"
+                                  label="Release Year"
+                                  persistent-hint
+                                ></v-text-field>
+                              </v-col>
+                              <v-col cols="12">
+                                <v-alert dense outlined type="error" :value="isEditError">
+                                  Error Occurred During Editing: Please Try Again!
+                                </v-alert>
+                              </v-col>
+                            </v-row>
+                          </v-container>
+                        </v-card-text>
+                        <v-card-actions>
+                          <v-btn
+                            class="ma-2"
+                            color="#555"
+                            text
+                            @click="onEditDialogClose()"
+                          >
+                            Close
+                          </v-btn>
+                          <v-spacer></v-spacer>
+                          <v-btn
+                            class="ma-2"
+                            color="primary"
+                            :disabled="!editedFile.id"
+                            text
+                            :loading="isEditing"
+                            @click="editFileDetails()"
+                          >
+                            Edit
+                          </v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </v-dialog>
+                    <span v-if="f.artist"> {{ f.artist }} </span>|
                     {{ f.duration | elapsedTime }} | {{ f.size }}
-                    <v-btn icon>
-                      <v-icon color="grey lighten-1">
-                        mdi-pencil-circle-outline</v-icon
-                      >
-                    </v-btn></v-list-item-subtitle
-                  >
+                  </v-list-item-subtitle>
                 </v-list-item-content>
                 <v-list-item-action> </v-list-item-action>
                 <v-list-item-action>
@@ -230,9 +361,9 @@
                       mdi-play-circle-outline</v-icon
                     >
                   </v-btn>
-                  <v-btn icon>
+                  <!-- <v-btn icon>
                     <v-icon color="grey lighten-1"> mdi-playlist-plus</v-icon>
-                  </v-btn>
+                  </v-btn> -->
                 </v-list-item-action>
               </v-list-item>
             </v-list>
@@ -348,8 +479,11 @@ export default {
     importalbum: null,
     importdir: null,
     importfilepaths: null,
+    editedFile: {},
+    editFileChanged: false,
     dialog: false,
     completeDialog: false,
+    editDialog: [],
     files: [],
     db: [],
     filter: null,
@@ -359,6 +493,8 @@ export default {
     isFilterAscending: true,
     isSortAscending: true,
     genres: [],
+    albumList: [],
+    artistList: [],
     mainFilters: [
       { text: "All", value: "all" },
       { text: "Genre", value: "genre" },
@@ -379,7 +515,9 @@ export default {
     headerKeys: [],
     newFiles: [],
     isImporting: false,
-    thumbPath: path.join(remote.app.getPath("userData"), "thumbnails", "/"),
+    isEditing: false,
+    isEditError: false,
+    thumbPath: path.join(remote.app.getPath("userData"), "thumbnails"),
   }),
   mounted() {
     this.db.length = 0;
@@ -396,6 +534,28 @@ export default {
         this.importfilepaths = null;
       }
     });
+    ipcRenderer.on("open-video-file-dialog-reply", (event, data) => {
+      this.isImporting = false;
+      console.log("get-video-file REPLIED", event, data);
+      if (data && data.video && data.video.length) {
+        this.editedFile.filePath = data.video[0];
+        this.editFileChanged = true;
+      }
+    });
+    ipcRenderer.on("open-image-file-dialog-reply", (event, data) => {
+      this.isImporting = false;
+      console.log("get-image-file REPLIED", event, data);
+      if (data && data.image) {
+        this.editedFile.thumbnailPath = data.image;
+      }
+    });
+    ipcRenderer.on("open-video-file-dialog-reply", (event, data) => {
+      this.isImporting = false;
+      console.log("open-video-file REPLIED", event, data);
+      if (data && data.video && data.video.length) {
+        this.importdir = data.video[0];
+      }
+    });
     ipcRenderer.on("open-file-paths-dialog-reply", (event, data) => {
       this.isImporting = false;
       console.log("get-file-paths REPLIED", event, data);
@@ -408,15 +568,32 @@ export default {
       console.log("import-files REPLIED", event, data);
       this.newFiles = data.files;
       this.completeDialog = true;
+      this.resetValues();
+      this.refreshDB();
+      this.isImporting = false;
+    });
+    ipcRenderer.on("edit-file-dialog-reply", (event, data) => {
+      console.log("edit-file REPLIED", event, data);
+      if (data.isSuccess) {
+        console.log('SUCCESS')
+        this.editDialog = [];
+        this.resetValues();
+        this.refreshDB();
+        this.isEditing = false;
+      } else {
+        this.isEditError = true;
+      }
+    });
+  },
+  methods: {
+    resetValues() {
       this.importdir = null;
       this.importgenre = null;
       this.importartist = null;
       this.importalbum = null;
-      this.refreshDB();
-      this.isImporting = false;
-    });
-  },
-  methods: {
+      this.editFileChanged = false;
+      this.editedFile = {};
+    },
     refreshDB() {
       this.db.length = 0;
       this.files = [];
@@ -425,17 +602,44 @@ export default {
         this.db = videos.sort((a, b) =>
           a.displayName.localeCompare(b.displayName)
         );
-        this.genres = [
-          ...new Set(
-            [...this.db]
-              .filter((item) => item["genre"])
-              .map((item) => item["genre"])
-              .sort((a, b) => a.localeCompare(b))
-          ),
-        ];
+        this.genres = this.getSetList("genre");
+        this.albumList = this.getSetList("album");
+        this.artistList = this.getSetList("artist");
         this.filteredDB = [...this.db];
         this.onFilterChange();
         console.log("all", this.db);
+      });
+    },
+    getSetList(param) {
+      return [
+        ...new Set(
+          [...this.db]
+            .filter((item) => item[param])
+            .map((item) => item[param])
+            .sort((a, b) => a.localeCompare(b))
+        ),
+      ];
+    },
+    openEditDialog(f) {
+      this.editFileChanged = false;
+      this.editedFile = { ...f };
+    },
+    getImagePath() {
+      ipcRenderer.send("getImageFilePath", { id: this.editedFile.id });
+    },
+    getNewFilePath() {
+      ipcRenderer.send("getVideoFilePath");
+    },
+    onEditDialogClose() {
+      this.editDialog = [];
+      this.editedFile = {};
+    },
+    editFileDetails() {
+      this.isEditing = true;
+      this.isEditError = false;
+      ipcRenderer.send("editVideoDetails", {
+        file: this.editedFile,
+        isFileChanged: this.editFileChanged,
       });
     },
     onDialogClose() {
@@ -472,10 +676,10 @@ export default {
     },
     playVideoPlaylist(file) {
       const playlist = [];
-      this.sortedLibrary.forEach(bin => {
+      this.sortedLibrary.forEach((bin) => {
         playlist.push(...bin.videos);
-      })
-      this.$store.commit("changePlaylist", { name: "Library", playlist})
+      });
+      this.$store.commit("changePlaylist", { name: "Library", playlist });
       this.$store.commit("changeFile", file);
     },
     openVideo(file) {
@@ -585,8 +789,8 @@ export default {
     },
   },
   watch: {
-    filter3(newVal) {
-      this.filter3 = newVal;
+    sortFilter(newVal) {
+      this.sortFilter = newVal;
     },
   },
 };
