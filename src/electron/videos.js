@@ -219,6 +219,7 @@ const openFolderListener = (app, db) => {
                       size: convertBytes(metadata.format.size),
                       duration: Math.floor(metadata.format.duration),
                       artist: data.artist || '',
+                      composer: data.composer || '',
                       album: data.album || '',
                       genre: data.genre || '',
                       thumbnailPath: id + '.png'

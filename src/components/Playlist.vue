@@ -1,9 +1,9 @@
 <template>
   <div style="width: 100%; height: 100%">
     <v-toolbar dark dense shaped elevation="0" class="playlist__search">
-      <v-btn icon>
+      <!-- <v-btn icon>
         <v-icon>mdi-playlist-music</v-icon>
-      </v-btn>
+      </v-btn> -->
       <v-tooltip bottom>
         <template v-slot:activator="{ on }"
           ><div v-on="on" class="playlist__title">
@@ -28,7 +28,11 @@
           </v-list-item-avatar>
           <v-list-item-content>
             <v-list-item-title>{{ f.displayName }}</v-list-item-title>
-            <v-list-item-subtitle><div v-if="f.artist">{{ f.artist }}<br></div>
+            <v-list-item-subtitle><div v-if="f.artist || f.composer">
+              <span v-if="f.artist">{{ f.artist }}</span>
+              <span v-if="f.artist && f.composer"> | </span>
+              <span v-if="f.composer">{{ f.composer }}</span>
+            <br></div>
             {{ f.duration | elapsedTime }} <span v-if="f.album">| {{ f.album }}</span></v-list-item-subtitle>
           </v-list-item-content>
           <v-list-item-action>

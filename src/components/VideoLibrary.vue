@@ -43,12 +43,22 @@
                   </li>
                 </v-col>
                 <v-col cols="12">
-                  <v-text-field
+                  <v-combobox
                     v-model="importartist"
+                    :items="artistList"
                     label="Artist"
                     hint="Tag all Files with this Artist (Optional)"
                     persistent-hint
-                  ></v-text-field>
+                  ></v-combobox>
+                </v-col>
+                <v-col cols="12">
+                  <v-combobox
+                    v-model="importcomposer"
+                    :items="composerList"
+                    label="Composer"
+                    hint="Tag all Files with this Composer (Optional)"
+                    persistent-hint
+                  ></v-combobox>
                 </v-col>
                 <v-col cols="12">
                   <v-text-field
@@ -92,10 +102,10 @@
       <v-toolbar-title></v-toolbar-title>
 
       <v-spacer></v-spacer>
-      <v-text-field hide-details single-line></v-text-field>
+      <!-- <v-text-field hide-details single-line></v-text-field>
       <v-btn icon>
         <v-icon>mdi-magnify</v-icon>
-      </v-btn>
+      </v-btn> -->
       <template>
         <div class="text-center">
           <v-menu bottom left offset-y>
@@ -232,6 +242,7 @@
                   <v-list-item-title>{{ f.displayName }}</v-list-item-title>
                   <v-list-item-subtitle>
                     <span v-if="f.artist">{{ f.artist }} </span>
+                    <span v-if="f.composer">| {{ f.composer }} </span>
                     <span v-if="f.album">| {{ f.album }} </span><br>
                     <span v-if="f.releaseYear">{{ f.releaseYear }} | </span>
                     <span v-if="f.genre">{{ f.genre }} | </span>
@@ -306,14 +317,6 @@
                               </v-col>
                               <v-col cols="6">
                                 <v-combobox
-                                  v-model="editedFile.artist"
-                                  :items="artistList"
-                                  label="Artist"
-                                >
-                                </v-combobox>
-                              </v-col>
-                              <v-col cols="6">
-                                <v-combobox
                                   v-model="editedFile.album"
                                   :items="albumList"
                                   label="Album"
@@ -322,17 +325,26 @@
                               </v-col>
                               <v-col cols="6">
                                 <v-combobox
+                                  v-model="editedFile.artist"
+                                  :items="artistList"
+                                  label="Artist"
+                                >
+                                </v-combobox>
+                              </v-col>
+                              <v-col cols="6">
+                                <v-combobox
+                                  v-model="editedFile.composer"
+                                  :items="composerList"
+                                  label="Composer"
+                                ></v-combobox>
+                              </v-col>
+                              <v-col cols="6">
+                                <v-combobox
                                   v-model="editedFile.genre"
                                   :items="genres"
                                   label="Genre"
                                 >
                                 </v-combobox>
-                              </v-col>
-                              <v-col cols="6">
-                                <v-text-field
-                                  v-model="editedFile.period"
-                                  label="Period"
-                                ></v-text-field>
                               </v-col>
                               <v-col cols="6">
                                 <v-text-field
@@ -578,6 +590,7 @@ export default {
   data: () => ({
     importgenre: null,
     importartist: null,
+    importcomposer: null,
     importalbum: null,
     importdir: null,
     importfilepaths: null,
@@ -600,16 +613,19 @@ export default {
     genres: [],
     albumList: [],
     artistList: [],
+    composerList: [],
     mainFilters: [
       { text: "All", value: "all" },
       { text: "Genre", value: "genre" },
       { text: "Artist", value: "artist" },
+      { text: "Composer", value: "composer" },
       { text: "Album", value: "album" },
     ],
     sortOptions: [
       { text: "Track Name", value: "displayName" },
       { text: "Genre", value: "genre" },
       { text: "Artist", value: "artist" },
+      { text: "Composer", value: "composer" },
       { text: "Album", value: "album" },
       { text: "Year", value: "releaseYear" },
       { text: "Length", value: "duration" },
@@ -711,6 +727,7 @@ export default {
       this.importdir = null;
       this.importgenre = null;
       this.importartist = null;
+      this.importcomposer = null;
       this.importalbum = null;
       this.editFileChanged = false;
       this.editedFile = {};
@@ -732,6 +749,7 @@ export default {
         this.genres = this.getSetList("genre");
         this.albumList = this.getSetList("album");
         this.artistList = this.getSetList("artist");
+        this.composerList = this.getSetList("composer");
         this.filteredDB = [...this.db];
         this.filter = this.$store.state.filter;
         this.onFilterChange();
@@ -762,19 +780,21 @@ export default {
       this.editedFile = {};
     },
     editFileDetails() {
-      this.isEditing = true;
-      this.isEditError = false;
-      ipcRenderer.send("editVideoDetails", {
-        file: this.editedFile,
-        isFileChanged: this.editFileChanged,
-      });
+      setTimeout(() => {
+        this.isEditing = true;
+        this.isEditError = false;
+        ipcRenderer.send("editVideoDetails", {
+          file: this.editedFile,
+          isFileChanged: this.editFileChanged,
+        });
+      }, 100); // Workaround for v-ComboBox on blur saving to model
     },
     openDeleteConfirmDialog(f) {
       this.isDeleting = false;
       this.deletedFile = { ...f };
     },
     onDeleteDialogClose() {
-      this.deleteConfirmDialog = false;
+      this.deleteConfirmDialog = false;0
       this.deletedFile = {};
     },
     deleteFile() {
@@ -802,6 +822,7 @@ export default {
           dir: this.importdir,
           filePaths: this.importfilepaths,
           artist: this.importartist,
+          composer: this.importcomposer,
           album: this.importalbum,
           genre: this.importgenre,
         });

@@ -29,6 +29,10 @@ const videoSchema = {
             type: 'string',
             default: ''
         },
+        composer: {
+            type: 'string',
+            default: ''
+        },
         album: {
             type: 'string',
             default: ''

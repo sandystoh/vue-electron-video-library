@@ -2,8 +2,9 @@
   <div class="playbar__main">
     <div class="playbar__title">{{ file.displayName }}<br>
       <div class="playbar__subtitle">{{ file.duration | elapsedTime }} 
-        <span v-if="file.album">| {{ file.album }} </span>
-        <span v-if="file.artist">| {{ file.artist }}</span></div>
+        <span v-if="file.artist">| Artist: {{ file.artist }} </span>
+        <span v-if="file.composer">| Composer: {{ file.composer }} </span>
+        <span v-if="file.album">| Album: {{ file.album }} </span></div>
     </div>
     <div class="playbar__btns">
       <v-btn dark @click="prevVideo()"
