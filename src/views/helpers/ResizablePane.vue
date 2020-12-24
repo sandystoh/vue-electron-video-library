@@ -37,7 +37,7 @@ export default {
     },
     maxSize: {
       type: String,
-      default: "calc(100% - 24rem)",
+      default: "calc(100% - 384px)",
     },
     resizeType: {
       validator(value) {

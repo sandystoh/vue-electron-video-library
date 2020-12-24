@@ -16,7 +16,12 @@ module.exports = {
           return args;
         });
       },
-      nodeIntegration: true
+      nodeIntegration: true,
+      builderOptions: {
+        win: {
+          icon: './icon.ico'
+        }
+      }
     }
   }
 }

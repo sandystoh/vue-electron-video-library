@@ -4,8 +4,6 @@ import { ipcMain, dialog, BrowserWindow } from 'electron'
 const path = require('path');
 const ffbinaries = require('ffbinaries');
 const ffmpeg = require('fluent-ffmpeg');
-ffmpeg.setFfmpegPath(path.join(__dirname, 'binaries', 'ffmpeg'));
-ffmpeg.setFfprobePath(path.join(__dirname, 'binaries', 'ffprobe'));
 import { convertBytes } from '../utilities/file-size'
 const walk = require('walk');
 const sharp = require('sharp');
@@ -13,11 +11,16 @@ const fs = require('fs');
 import { nanoid } from 'nanoid';
 var glob = require("glob");
 
-const downloadFFBinaries = () => {
-  const dest = __dirname + '/binaries';
+// const unhandled = require('electron-unhandled');
+// unhandled();
+
+const downloadFFBinaries = (app) => {
+  ffmpeg.setFfmpegPath(path.join(app.getPath('userData'), 'binaries', 'ffmpeg'));
+  ffmpeg.setFfprobePath(path.join(app.getPath('userData'), 'binaries', 'ffprobe'));
+  const dest = path.join(app.getPath('userData'), 'binaries');
   const platform = ffbinaries.detectPlatform();
   ffbinaries.downloadBinaries(['ffmpeg', 'ffprobe'], { platform: platform, quiet: true, destination: dest }, function () {
-    console.log('Downloaded ffmpeg and ffprobe binaries for ' + platform + ' to ' + dest + '.');
+    // console.log('Downloaded ffmpeg and ffprobe binaries for ' + platform + ' to ' + dest + '.');
   });
 }
 

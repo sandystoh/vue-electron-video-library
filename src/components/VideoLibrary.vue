@@ -12,7 +12,7 @@
             v-on="on"
           >
             <v-icon>mdi-folder-open-outline</v-icon
-            ><span style="padding-left: 0.5rem">Import</span>
+            ><span style="padding-left: 8px; font-size: 12px">Import</span>
           </v-btn>
         </template>
         <v-card>
@@ -147,7 +147,7 @@
             :items="mainFilters"
             item-text="text"
             item-value="value"
-            style="padding-top: 1.6rem"
+            style="padding-top: 26px"
             height="16"
             label="Select Filter"
             @change="onFilterChange()"
@@ -193,7 +193,7 @@
             :items="mainFilters"
             item-text="text"
             item-value="value"
-            style="padding-top: 1.6rem"
+            style="padding-top: 26px"
             label="Select Categorization"
           ></v-select>
           <v-tooltip bottom>
@@ -213,7 +213,7 @@
             :items="sortOptions"
             item-text="text"
             item-value="value"
-            style="padding-top: 1.6rem"
+            style="padding-top: 26px"
             label="Sort By"
           ></v-select>
           <v-btn icon @click="changeSortOrder()">
@@ -307,7 +307,7 @@
                                 </v-btn>
                               </v-col>
                               <v-col cols="12">
-                                {{ editedFile.filePath }}
+                                <span class="dialog__text">{{ editedFile.filePath }}</span>
                               </v-col>
                               <v-col cols="6">
                                 <v-text-field
@@ -384,7 +384,7 @@
                         </v-card-actions>
                       </v-card>
                     </v-dialog>
-                    <v-dialog v-model="deleteConfirmDialog" max-width="600px">
+                    <v-dialog v-model="deleteConfirmDialog" max-width="600px" :retain-focus="false">
                         <template v-slot:activator="{ on, attrs }">
                         <v-btn
                           icon
@@ -402,15 +402,15 @@
                         <v-list dense>
                             <v-list-item>
                               <v-list-item-content>
-                                <v-list-item-title
-                                  v-text="deletedFile.displayName"
-                                ></v-list-item-title>
+                                <v-list-item-title>
+                                  <span class="dialog__text">{{ deletedFile.displayName }}</span>
+                                </v-list-item-title>
                               </v-list-item-content>
                             </v-list-item>
                         </v-list>
                         <v-col cols="12">
                           <v-alert dense outlined type="error" :value="isDeleteError">
-                            Error Occurred During Deleting: Please Try Again!
+                            <span class="dialog__text">Error Occurred During Deleting: Please Try Again!</span>
                           </v-alert>
                         </v-col>
                         <v-card-actions>
@@ -418,7 +418,7 @@
                             class="ma-2"
                             color="#555"
                             text
-                            @click="onDeleteDialogClose()"
+                            @click="deleteConfirmDialog = false;deletedFile = {};"
                           >
                             Cancel
                           </v-btn>
@@ -464,14 +464,14 @@
           <div v-if="newFiles.length">
             <v-list-item v-for="(item, i) in newFiles" :key="i">
               <v-list-item-content>
-                <v-list-item-title
-                  v-text="item.displayName"
-                ></v-list-item-title>
+                <v-list-item-title>
+                   <span class="dialog__text">{{item.displayName}}</span>
+                </v-list-item-title>
               </v-list-item-content>
             </v-list-item>
           </div>
           <div v-if="newFiles.length === 0" style="padding-left: 24px">
-            No New Files Imported
+            <span class="dialog__text">No New Files Imported</span>
           </div>
         </v-list>
         <v-card-actions>
@@ -498,9 +498,9 @@
         <v-list dense>
             <v-list-item>
               <v-list-item-content>
-                <v-list-item-title
-                  v-text="deletedFile.displayName"
-                ></v-list-item-title>
+                <v-list-item-title>
+                  <span class="dialog__text">{{deletedFile.displayName}}</span>
+                </v-list-item-title>
               </v-list-item-content>
             </v-list-item>
         </v-list>
@@ -535,11 +535,11 @@
     height: calc(100% - 48px);
   }
   &__filter-first {
-    width: 15rem;
+    width: 240px;
     border-right: 1px solid #333;
   }
   &__filter-second {
-    width: calc(100% - 15rem);
+    width: calc(100% - 240px);
   }
   &__highlight {
     background-color: #333;
@@ -577,6 +577,37 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.v-list-item {
+  &__title {
+    font-size: 16px !important;
+  }
+  &__subtitle {
+    font-size: 14px;
+  }
+}
+.v-card {
+  &__title {
+    font-size: 16px !important;
+    .headline {
+      font-size: 16px;
+    }
+  }
+}
+.v-subheader {
+  font-size: 14px !important;
+}
+.v-btn {
+  &__content {
+    font-size: 12px;
+    .span {
+      font-size: 12px;
+    }
+  }
+}
+.dialog__text {
+  margin-left: 24px;
+  font-size: 14px;
 }
 </style>
 <script>
@@ -790,11 +821,10 @@ export default {
       }, 100); // Workaround for v-ComboBox on blur saving to model
     },
     openDeleteConfirmDialog(f) {
-      this.isDeleting = false;
       this.deletedFile = { ...f };
     },
     onDeleteDialogClose() {
-      this.deleteConfirmDialog = false;0
+      this.deleteConfirmDialog = false;
       this.deletedFile = {};
     },
     deleteFile() {

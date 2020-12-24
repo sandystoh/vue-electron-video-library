@@ -1,6 +1,6 @@
 <template>
   <div style="width: 100%; height: 100%">
-    <v-toolbar dark dense shaped elevation="0" class="playlist__search">
+    <v-toolbar dark dense shaped elevation="0" class="playlist__search" style="position:relative;">
       <!-- <v-btn icon>
         <v-icon>mdi-playlist-music</v-icon>
       </v-btn> -->
@@ -47,6 +47,14 @@
   </div>
 </template>
 <style lang="scss">
+.v-list-item {
+  &__title {
+    font-size: 16px;
+  }
+  &__subtitle {
+    font-size: 14px;
+  }
+}
 .playlist {
   &__search {
     position: absolute;

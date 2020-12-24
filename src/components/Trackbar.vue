@@ -1,7 +1,7 @@
 <template>
   <div class="playbar__main">
     <div class="playbar__title">{{ file.displayName }}<br>
-      <div class="playbar__subtitle">{{ file.duration | elapsedTime }} 
+      <div class="playbar__subtitle"><span v-if="file.duration">{{ file.duration | elapsedTime }} </span>
         <span v-if="file.artist">| Artist: {{ file.artist }} </span>
         <span v-if="file.composer">| Composer: {{ file.composer }} </span>
         <span v-if="file.album">| Album: {{ file.album }} </span></div>

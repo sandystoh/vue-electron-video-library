@@ -4,6 +4,7 @@ import { app, protocol, BrowserWindow } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 const isDevelopment = process.env.NODE_ENV !== 'production'
+const path = require('path');
 const db = require('./db/stores/video')(app);
 import registerLocalResourceProtocol from './electron/utilities.js';
 import { downloadFFBinaries, openFolderListener } from './electron/videos.js';
@@ -37,7 +38,7 @@ function createWindow() {
   } else {
     createProtocol('app')
     // Load the index.html when not in development
-    win.loadURL('app://./index.html')
+    win.loadURL(path.join(__dirname, 'index.html'))
   }
 
   win.on('closed', () => {
@@ -66,7 +67,7 @@ app.on('activate', () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', async () => {
-  downloadFFBinaries();
+  downloadFFBinaries(app);
   openFolderListener(app, db);
   registerLocalResourceProtocol();
   if (isDevelopment && !process.env.IS_TEST) {

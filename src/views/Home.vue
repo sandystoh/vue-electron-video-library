@@ -3,8 +3,8 @@
     <div id="nav">
       <v-sheet elevation="6">
         <v-tabs fixed-tabs background-color="#00bcd4" dark>
-          <v-tab to="/">Now Showing</v-tab>
-          <v-tab to="/library">Library</v-tab>
+          <v-tab to="/"><span class="nav__title">Now Showing</span></v-tab>
+          <v-tab to="/library"><span class="nav__title">Library</span></v-tab>
         </v-tabs>
       </v-sheet>
     </div>
@@ -43,6 +43,9 @@
   overflow: hidden;
   background-color: #1e1e1e;
 }
+.nav__title {
+  font-size: 14px;
+}
 .home {
   width: 100%;
   height: calc(100% - 48px - 75px);
@@ -53,6 +56,7 @@
 }
 .layout {
   height: 100%;
+  width: 100%;
 }
 .sidebar {
   display: flex;
@@ -65,7 +69,7 @@
   width: 100%;
 }
 .video-full {
-  width: calc(100% - 24rem);
+  width: calc(100% - 384px);
 }
 .playlist {
   font-family: "Fira Sans", sans-serif;
@@ -73,17 +77,17 @@
   color: #fff;
 }
 .playlist-full {
-  width: 24rem;
+  width: 384px;
   height: 100% !important;
 }
 .video-preview {
   font-family: "Fira Sans", sans-serif;
-  min-width: 24rem;
+  min-width: 384px;
   width: 100%; // calc(100% - 20rem);
   height: 100%;
   background-color: #1e1e1e;
   color: #fff;
-  flex-basis: calc(100% - 24rem);
+  flex-basis: calc(100% - 384px);
 }
 .trackbar {
   height: 75px;
