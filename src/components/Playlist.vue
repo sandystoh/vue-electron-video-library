@@ -27,8 +27,9 @@
             <v-icon>fas fa-film</v-icon>
           </v-list-item-avatar>
           <v-list-item-content>
-            <v-list-item-title>{{ f.name }}</v-list-item-title>
-            <v-list-item-subtitle>{{ f.size }}</v-list-item-subtitle>
+            <v-list-item-title>{{ f.displayName }}</v-list-item-title>
+            <v-list-item-subtitle><div v-if="f.artist">{{ f.artist }}<br></div>
+            {{ f.duration | elapsedTime }} <span v-if="f.album">| {{ f.album }}</span></v-list-item-subtitle>
           </v-list-item-content>
           <v-list-item-action>
             <!-- <v-btn icon>

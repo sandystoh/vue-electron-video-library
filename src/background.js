@@ -4,7 +4,7 @@ import { app, protocol, BrowserWindow } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 const isDevelopment = process.env.NODE_ENV !== 'production'
-const db = require('./db/stores/video');
+const db = require('./db/stores/video')(app);
 import registerLocalResourceProtocol from './electron/utilities.js';
 import { downloadFFBinaries, openFolderListener } from './electron/videos.js';
 global.db = db;

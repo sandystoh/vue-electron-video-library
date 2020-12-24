@@ -1,6 +1,10 @@
 <template>
   <div class="playbar__main">
-    <div class="playbar__title">{{ file.name }}</div>
+    <div class="playbar__title">{{ file.displayName }}<br>
+      <div class="playbar__subtitle">{{ file.duration | elapsedTime }} 
+        <span v-if="file.album">| {{ file.album }} </span>
+        <span v-if="file.artist">| {{ file.artist }}</span></div>
+    </div>
     <div class="playbar__btns">
       <v-btn dark @click="prevVideo()"
         ><v-icon>mdi-skip-previous</v-icon></v-btn
@@ -25,6 +29,9 @@
     height: 75px;
     font-size: 18px;
     flex: 1;
+  }
+  &__subtitle {
+    font-size: 12px;
   }
   &__btns {
     flex: 0 0 250px;

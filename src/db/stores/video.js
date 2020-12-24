@@ -1,18 +1,19 @@
 const Datastore = require('nedb-promises');
+const path = require('path');
 const Ajv = require('ajv');
 const videoSchema = require('../schemas/video');
 
 class VideoStore {
-    constructor() {
+    constructor(app) {
         const ajv = new Ajv({
             allErrors: true,
             useDefaults: true
         });
 
         this.schemaValidator = ajv.compile(videoSchema);
-        const dbPath = `${process.cwd()}/videolibrary.db`;
+        // const dbPath = `${process.cwd()}/videolibrary.db`;
         this.db = Datastore.create({
-            filename: dbPath,
+            filename: path.join(app.getPath('userData'), 'data', 'vidlibrary.db'),
             timestampData: true,
         });
     }
@@ -50,9 +51,14 @@ class VideoStore {
         return this.db.find({isActive: true}).exec();
     }
 
+    delete(id) {
+        return this.db.remove({id}, {}, function (err, numRemoved) {
+        });
+    }
+
     deactivate({_id}) {
         return this.db.update({_id}, {$set: {isActive: false}})
     }
 }
 
-module.exports = new VideoStore();
+module.exports = (app) => { return new VideoStore(app) };

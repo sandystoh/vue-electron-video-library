@@ -122,6 +122,10 @@ const openFolderListener = (app, db) => {
       editFile(event, data.file);
     }
   });
+  ipcMain.on('deleteVideo', function (event, data) {
+    console.log(data);
+    deleteFile(event, data.file);
+  });
 
   const editFile = (event, file) => {
     if(file && file.id) {
@@ -139,6 +143,23 @@ const openFolderListener = (app, db) => {
       });
     }
 
+  }
+
+  const deleteFile = (event, file) => {
+    if(file && file.id) {
+      db.delete(file.id).then(() => {
+        let cleanupImages = [];
+        glob(app.getPath('userData') + '/thumbnails/' + file.id + '*.png', function (er, files) {
+          cleanupImages = files;
+          cleanupImages.forEach(img => {
+            fs.unlinkSync(img);
+          });
+        });
+        event.sender.send('delete-file-dialog-reply', { isSuccess: true })
+      }).catch(err => {
+        event.sender.send('delete-file-dialog-reply', { isSuccess: false })
+      });
+    }
   }
 
   const crawlFoldersAndImport = (event, folderPath, data, replyPath) => {
@@ -166,6 +187,7 @@ const openFolderListener = (app, db) => {
       event.sender.send(replyPath, { files: fileList })
     });
   };
+
   const processFile = (filePath, data, isCreate = true, oldID = null) => {
     return new Promise((resolve, reject) => {
       console.log(isValidVideoExtension(filePath))

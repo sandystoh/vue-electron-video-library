@@ -96,9 +96,29 @@
       <v-btn icon>
         <v-icon>mdi-magnify</v-icon>
       </v-btn>
-      <v-btn icon>
-        <v-icon>mdi-dots-vertical</v-icon>
-      </v-btn>
+      <template>
+        <div class="text-center">
+          <v-menu bottom left offset-y>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                dark
+                v-bind="attrs"
+                v-on="on"
+                icon>
+                <v-icon>mdi-dots-vertical</v-icon>
+              </v-btn>
+            </template>
+            <v-list dark dense>
+              <v-list-item @click="clearFilters()">
+                <v-list-item-icon><v-icon>mdi-refresh</v-icon></v-list-item-icon>
+                <v-list-item-content>
+                  <v-list-item-title>Clear Filters</v-list-item-title>
+                </v-list-item-content>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
+      </template>
     </v-toolbar>
     <div class="videolibrary__main">
       <div class="videolibrary__filter-first">
@@ -158,7 +178,7 @@
             dense
             solo
             background-color="#00bcd4"
-            @change="applyCategorization()"
+            @change="onCategoryChange()"
             v-model="catFilter"
             :items="mainFilters"
             item-text="text"
@@ -178,7 +198,7 @@
             dense
             solo
             background-color="#00bcd4"
-            @change="applySort()"
+            @change="onSortChange()"
             v-model="sortFilter"
             :items="sortOptions"
             item-text="text"
@@ -211,9 +231,11 @@
                 <v-list-item-content>
                   <v-list-item-title>{{ f.displayName }}</v-list-item-title>
                   <v-list-item-subtitle>
-                    <span v-if="f.genre">{{ f.genre }} </span>
-                    <span v-if="f.album">| {{ f.album }}</span>
-                    <span v-if="f.year">| {{ f.year }}</span>
+                    <span v-if="f.artist">{{ f.artist }} </span>
+                    <span v-if="f.album">| {{ f.album }} </span><br>
+                    <span v-if="f.releaseYear">{{ f.releaseYear }} | </span>
+                    <span v-if="f.genre">{{ f.genre }} | </span>
+                    {{ f.duration | elapsedTime }} | {{ f.size }}
                   </v-list-item-subtitle>
                   <v-list-item-subtitle>
                     <v-dialog
@@ -350,8 +372,58 @@
                         </v-card-actions>
                       </v-card>
                     </v-dialog>
-                    <span v-if="f.artist"> {{ f.artist }} </span>|
-                    {{ f.duration | elapsedTime }} | {{ f.size }}
+                    <v-dialog v-model="deleteConfirmDialog" max-width="600px">
+                        <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                          icon
+                          v-bind="attrs"
+                          v-on="on"
+                          @click="openDeleteConfirmDialog(f)"
+                        >
+                          <v-icon>mdi-delete</v-icon>
+                        </v-btn>
+                      </template>
+                      <v-card>
+                        <v-card-title>
+                          <span class="headline">Are you sure you want to delete this file?</span>
+                        </v-card-title>
+                        <v-list dense>
+                            <v-list-item>
+                              <v-list-item-content>
+                                <v-list-item-title
+                                  v-text="deletedFile.displayName"
+                                ></v-list-item-title>
+                              </v-list-item-content>
+                            </v-list-item>
+                        </v-list>
+                        <v-col cols="12">
+                          <v-alert dense outlined type="error" :value="isDeleteError">
+                            Error Occurred During Deleting: Please Try Again!
+                          </v-alert>
+                        </v-col>
+                        <v-card-actions>
+                          <v-btn
+                            class="ma-2"
+                            color="#555"
+                            text
+                            @click="onDeleteDialogClose()"
+                          >
+                            Cancel
+                          </v-btn>
+                          <v-spacer></v-spacer>
+                          <v-btn
+                            class="ma-2"
+                            color="primary"
+                            :disabled="!deletedFile.id"
+                            text
+                            :loading="isDeleting"
+                            @click="deleteFile()"
+                          >
+                            Confirm Delete
+                          </v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </v-dialog>
                   </v-list-item-subtitle>
                 </v-list-item-content>
                 <v-list-item-action> </v-list-item-action>
@@ -399,6 +471,36 @@
             @click="
               completeDialog = false;
               newFiles.length = 0;
+            "
+          >
+            Close
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="deleteResultDialog" max-width="600px">
+      <v-card>
+        <v-card-title>
+          <span class="headline">File Deleted Successfully!</span>
+        </v-card-title>
+        <v-list dense>
+            <v-list-item>
+              <v-list-item-content>
+                <v-list-item-title
+                  v-text="deletedFile.displayName"
+                ></v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+        </v-list>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            class="ma-2"
+            color="primary"
+            text
+            @click="
+              deleteResultDialog = false;
+              deletedFile = {};
             "
           >
             Close
@@ -483,6 +585,9 @@ export default {
     editFileChanged: false,
     dialog: false,
     completeDialog: false,
+    deletedFile: {},
+    deleteConfirmDialog: false,
+    deleteResultDialog: false,
     editDialog: [],
     files: [],
     db: [],
@@ -517,6 +622,8 @@ export default {
     isImporting: false,
     isEditing: false,
     isEditError: false,
+    isDeleting: false,
+    isDeleteError: false,
     thumbPath: path.join(remote.app.getPath("userData"), "thumbnails"),
   }),
   mounted() {
@@ -582,6 +689,20 @@ export default {
         this.isEditing = false;
       } else {
         this.isEditError = true;
+        this.isEditing = false;
+      }
+    });
+    ipcRenderer.on("delete-file-dialog-reply", (event, data) => {
+      console.log("delete-file REPLIED", event, data);
+      if (data.isSuccess) {
+        console.log('SUCCESS')
+        this.deleteConfirmDialog = false;
+        this.deleteResultDialog = true;
+        this.refreshDB();
+        this.isDeleting = false;
+      } else {
+        this.isDeleteError = true;
+        this.isDeleting = false;
       }
     });
   },
@@ -593,6 +714,12 @@ export default {
       this.importalbum = null;
       this.editFileChanged = false;
       this.editedFile = {};
+    },
+    clearFilters() {
+      this.$store.commit('changeFilter', '');
+      this.$store.commit('changeCategorization', '');
+      this.$store.commit('changeSortFilter', '');
+      this.refreshDB();
     },
     refreshDB() {
       this.db.length = 0;
@@ -606,8 +733,8 @@ export default {
         this.albumList = this.getSetList("album");
         this.artistList = this.getSetList("artist");
         this.filteredDB = [...this.db];
+        this.filter = this.$store.state.filter;
         this.onFilterChange();
-        console.log("all", this.db);
       });
     },
     getSetList(param) {
@@ -640,6 +767,21 @@ export default {
       ipcRenderer.send("editVideoDetails", {
         file: this.editedFile,
         isFileChanged: this.editFileChanged,
+      });
+    },
+    openDeleteConfirmDialog(f) {
+      this.isDeleting = false;
+      this.deletedFile = { ...f };
+    },
+    onDeleteDialogClose() {
+      this.deleteConfirmDialog = false;
+      this.deletedFile = {};
+    },
+    deleteFile() {
+      this.isDeleting = true;
+      this.isDeleteError = false;
+      ipcRenderer.send("deleteVideo", {
+        file: this.deletedFile
       });
     },
     onDialogClose() {
@@ -688,6 +830,7 @@ export default {
       // console.log('sidebar', this.$store.state.file.name);
     },
     onFilterChange() {
+      this.$store.commit('changeFilter', this.filter);
       this.getCategories(this.filter);
     },
     getCategories(filter) {
@@ -725,7 +868,12 @@ export default {
         this.applyCategorization();
       }
     },
+    onSortChange() {
+      this.$store.commit('changeSortFilter', this.sortFilter);
+      this.applySort();
+    },
     applySort() {
+      this.sortFilter = this.$store.state.sort;
       if (!this.sortFilter) {
         this.sortFilter = "displayName";
       }
@@ -747,9 +895,15 @@ export default {
         });
       }
     },
+    onCategoryChange() {
+      this.$store.commit('changeCategorization', this.catFilter);
+      this.applyCategorization();
+    },
     applyCategorization() {
+      this.catFilter = this.$store.state.categorization;
       if (!this.catFilter || this.catFilter === "all") {
         this.sortedLibrary = [{ header: "All", videos: this.filteredDB }];
+        this.applySort();
       } else {
         this.headerKeys = this.getBinCategories(this.catFilter);
         this.sortedLibrary = this.headerKeys.map((key) => ({

@@ -8,7 +8,10 @@ export default new Vuex.Store({
     file: { name: 'initial' },
     playlist: [],
     isPaused: true,
-    leftPaneWidth: 0
+    leftPaneWidth: 0,
+    filter: '',
+    categorization: '',
+    sort: ''
   },
   mutations: {
     changeFile (state, payload) {
@@ -22,6 +25,15 @@ export default new Vuex.Store({
     },
     changeLeftPanelWidth (state, payload) {
       state.leftPaneWidth = payload;
+    },
+    changeFilter (state, payload) {
+      state.filter = payload;
+    },
+    changeCategorization (state, payload) {
+      state.categorization = payload;
+    },
+    changeSortFilter (state, payload) {
+      state.sort = payload;
     }
   },
   actions: {
