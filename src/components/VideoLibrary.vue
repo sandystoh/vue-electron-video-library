@@ -61,12 +61,22 @@
                   ></v-combobox>
                 </v-col>
                 <v-col cols="12">
-                  <v-text-field
+                  <v-combobox
                     v-model="importalbum"
+                    :items="albumList"
                     label="Album"
                     hint="Tag all Files with this Album (Optional)"
                     persistent-hint
-                  ></v-text-field>
+                  ></v-combobox>
+                </v-col>
+                <v-col cols="12">
+                  <v-text-field
+                    v-model="importyear"
+                    label="Release Year"
+                    hint="Tag all Files with this Year (Optional)"
+                    persistent-hint
+                  >
+                  </v-text-field>
                 </v-col>
                 <v-col cols="12">
                   <v-combobox
@@ -74,6 +84,16 @@
                     :items="genres"
                     label="Genre"
                     hint="Tag all Files with this Genre (Optional)"
+                    persistent-hint
+                  >
+                  </v-combobox>
+                </v-col>
+                <v-col cols="12">
+                  <v-combobox
+                    v-model="importsubgenre"
+                    :items="subgenres"
+                    label="Sub-Genre"
+                    hint="Tag all Files with this Sub Genre (Optional)"
                     persistent-hint
                   >
                   </v-combobox>
@@ -245,7 +265,8 @@
                     <span v-if="f.composer">| {{ f.composer }} </span>
                     <span v-if="f.album">| {{ f.album }} </span><br>
                     <span v-if="f.releaseYear">{{ f.releaseYear }} | </span>
-                    <span v-if="f.genre">{{ f.genre }} | </span>
+                    <span v-if="f.genre">{{ f.genre }} | </span>                    
+                    <span v-if="f.subgenre">{{ f.subgenre }} | </span>
                     {{ f.duration | elapsedTime }} | {{ f.size }}
                   </v-list-item-subtitle>
                   <v-list-item-subtitle>
@@ -309,19 +330,11 @@
                               <v-col cols="12">
                                 <span class="dialog__text">{{ editedFile.filePath }}</span>
                               </v-col>
-                              <v-col cols="6">
+                              <v-col cols="12">
                                 <v-text-field
                                   v-model="editedFile.displayName"
                                   label="Display Name"
                                 ></v-text-field>
-                              </v-col>
-                              <v-col cols="6">
-                                <v-combobox
-                                  v-model="editedFile.album"
-                                  :items="albumList"
-                                  label="Album"
-                                >
-                                </v-combobox>
                               </v-col>
                               <v-col cols="6">
                                 <v-combobox
@@ -343,6 +356,22 @@
                                   v-model="editedFile.genre"
                                   :items="genres"
                                   label="Genre"
+                                >
+                                </v-combobox>
+                              </v-col>
+                              <v-col cols="6">
+                                <v-combobox
+                                  v-model="editedFile.subgenre"
+                                  :items="subgenres"
+                                  label="Sub-Genre"
+                                >
+                                </v-combobox>
+                              </v-col>
+                              <v-col cols="6">
+                                <v-combobox
+                                  v-model="editedFile.album"
+                                  :items="albumList"
+                                  label="Album"
                                 >
                                 </v-combobox>
                               </v-col>
@@ -620,9 +649,11 @@ export default {
   components: {},
   data: () => ({
     importgenre: null,
+    importsubgenre: null,
     importartist: null,
     importcomposer: null,
     importalbum: null,
+    importyear: null,
     importdir: null,
     importfilepaths: null,
     editedFile: {},
@@ -642,15 +673,18 @@ export default {
     isFilterAscending: true,
     isSortAscending: true,
     genres: [],
+    subgenres: [],
     albumList: [],
     artistList: [],
     composerList: [],
     mainFilters: [
       { text: "All", value: "all" },
       { text: "Genre", value: "genre" },
+      { text: "Sub-Genre", value: "subgenre" },
       { text: "Artist", value: "artist" },
       { text: "Composer", value: "composer" },
       { text: "Album", value: "album" },
+      { text: "Year", value: "releaseYear" },
     ],
     sortOptions: [
       { text: "Track Name", value: "displayName" },
@@ -675,7 +709,22 @@ export default {
   }),
   mounted() {
     this.db.length = 0;
+    this.applySettings();
     this.refreshDB();
+    ipcRenderer.on("get-settings-reply", (event, data) => {
+      if(data) {
+        console.log('SETTINGS', data);
+        if(data.filter) {
+          this.$store.commit('changeFilter', data.filter);
+        }
+        if(data.categorization) {
+          this.$store.commit('changeCategorization', data.categorization);
+        }
+        if(data.sort) {
+          this.$store.commit('changeSortFilter', data.sort);
+        }
+      }
+    });
     ipcRenderer.on("open-folder-dialog-reply", (event, data) => {
       this.isImporting = false;
       console.log("open-folder REPLIED", event, data);
@@ -757,9 +806,11 @@ export default {
     resetValues() {
       this.importdir = null;
       this.importgenre = null;
+      this.importsubgenre = null;
       this.importartist = null;
       this.importcomposer = null;
       this.importalbum = null;
+      this.importyear = null;
       this.editFileChanged = false;
       this.editedFile = {};
     },
@@ -767,17 +818,26 @@ export default {
       this.$store.commit('changeFilter', '');
       this.$store.commit('changeCategorization', '');
       this.$store.commit('changeSortFilter', '');
+      ipcRenderer.send("saveSettings", { setting: 'filter', payload: '' });
+      ipcRenderer.send("saveSettings", { setting: 'categorization', payload: '' });
+      ipcRenderer.send("saveSettings", { setting: 'sort', payload: '' });
       this.refreshDB();
+    },
+    applySettings() {
+      ipcRenderer.send("getSettings");
     },
     refreshDB() {
       this.db.length = 0;
       this.files = [];
       dbInstance.readAll().then((videos) => {
         this.db = [];
-        this.db = videos.sort((a, b) =>
+        this.db = videos
+        .map(vid => ({ ...vid, subgenre: vid.subgenre || "" }))
+        .sort((a, b) =>
           a.displayName.localeCompare(b.displayName)
         );
         this.genres = this.getSetList("genre");
+        this.subgenres = this.getSetList("subgenre");
         this.albumList = this.getSetList("album");
         this.artistList = this.getSetList("artist");
         this.composerList = this.getSetList("composer");
@@ -798,7 +858,7 @@ export default {
     },
     openEditDialog(f) {
       this.editFileChanged = false;
-      this.editedFile = { ...f };
+      this.editedFile = { ...f, subgenre: f.subgenre || "" };
     },
     getImagePath() {
       ipcRenderer.send("getImageFilePath", { id: this.editedFile.id });
@@ -855,6 +915,8 @@ export default {
           composer: this.importcomposer,
           album: this.importalbum,
           genre: this.importgenre,
+          subgenre: this.importsubgenre,
+          releaseYear: this.importyear
         });
         this.dialog = false;
       }, 100); // Workaround for v-ComboBox on blur saving to model
@@ -882,6 +944,7 @@ export default {
     },
     onFilterChange() {
       this.$store.commit('changeFilter', this.filter);
+      ipcRenderer.send("saveSettings", { setting: 'filter', payload: this.filter });
       this.getCategories(this.filter);
     },
     getCategories(filter) {
@@ -921,6 +984,7 @@ export default {
     },
     onSortChange() {
       this.$store.commit('changeSortFilter', this.sortFilter);
+      ipcRenderer.send("saveSettings", { setting: 'sort', payload: this.sortFilter });
       this.applySort();
     },
     applySort() {
@@ -948,6 +1012,7 @@ export default {
     },
     onCategoryChange() {
       this.$store.commit('changeCategorization', this.catFilter);
+      ipcRenderer.send("saveSettings", { setting: 'categorization', payload: this.catFilter });
       this.applyCategorization();
     },
     applyCategorization() {

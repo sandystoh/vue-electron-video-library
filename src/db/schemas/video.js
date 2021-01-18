@@ -17,6 +17,10 @@ const videoSchema = {
             type: 'string',
             default: ''
         },
+        subgenre: {
+            type: 'string',
+            default: ''
+        },
         period: {
             type: 'string',
             default: ''

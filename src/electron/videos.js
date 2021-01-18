@@ -129,6 +129,37 @@ const openFolderListener = (app, db) => {
     console.log(data);
     deleteFile(event, data.file);
   });
+  ipcMain.on('getSettings', function (event, data) {
+    console.log(data);
+    getSettings(event, data);
+  });
+  ipcMain.on('saveSettings', function (event, data) {
+    console.log(data);
+    saveSettings(event, data);
+  });
+
+  const getSettings = (event, data) => {
+    const settingsPath = path.join(app.getPath('userData'), 'data', 'settings.json');
+    if (fs.existsSync(settingsPath)) {
+      const settingsData = fs.readFileSync(settingsPath);
+      const settings = JSON.parse(settingsData);
+      event.sender.send('get-settings-reply', { ...settings });
+    } else {
+      fs.writeFileSync(settingsPath, JSON.stringify({filter: '', categorization: '', sort: ''}));
+      event.sender.send('get-settings-reply', null);
+    }
+  }
+
+  const saveSettings = (event, data) => {
+    const settingsPath = path.join(app.getPath('userData'), 'data', 'settings.json');
+    const settingsData = fs.readFileSync(settingsPath);
+    const settings = JSON.parse(settingsData);
+    if(data.setting) {
+      console.log("Writing to settings")
+      settings[data.setting] = data.payload;
+      fs.writeFileSync(settingsPath, JSON.stringify(settings));
+    }
+  }
 
   const editFile = (event, file) => {
     if(file && file.id) {
@@ -225,6 +256,8 @@ const openFolderListener = (app, db) => {
                       composer: data.composer || '',
                       album: data.album || '',
                       genre: data.genre || '',
+                      subgenre: data.subgenre || '',
+                      releaseYear: data.releaseYear || '',
                       thumbnailPath: id + '.png'
                     };
                     console.log(file);

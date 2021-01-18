@@ -1,8 +1,8 @@
 {
   "name": "vue-electron-video-library",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
-  "description": "Video Library",
+  "description": "Local Video Library and Player created with Vue and Electron",
   "author": "Sandy Toh <sandystoh@gmail.com>",
   "scripts": {
     "serve": "vue-cli-service serve",
