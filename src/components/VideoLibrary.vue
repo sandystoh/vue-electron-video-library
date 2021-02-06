@@ -242,6 +242,11 @@
           </v-btn>
         </v-toolbar>
         <v-card dark class="mx-auto videolibrary__listing" max-width="100%">
+          <v-system-bar height="30" color="#1e1e1e" dark>
+            <v-spacer></v-spacer>
+            <v-icon>mdi-video-vintage</v-icon>
+            <span class="capitalize">{{ filter }}: {{ currentFilterValue }} - {{ filteredDB.length }} Videos</span>
+          </v-system-bar>
           <div v-for="header in sortedLibrary" v-bind:key="header.header">
             <v-subheader v-if="header.videos.length">{{
               header.header
@@ -272,7 +277,7 @@
                   <v-list-item-subtitle>
                     <v-dialog
                       v-model="editDialog[i]"
-                      persistent
+                      persistent :retain-focus="false"
                       max-width="900px"
                     >
                       <template v-slot:activator="{ on, attrs }">
@@ -638,6 +643,9 @@
   margin-left: 24px;
   font-size: 14px;
 }
+.capitalize {
+  text-transform: capitalize;
+}
 </style>
 <script>
 const { remote } = require("electron");
@@ -706,6 +714,7 @@ export default {
     isDeleting: false,
     isDeleteError: false,
     thumbPath: path.join(remote.app.getPath("userData"), "thumbnails"),
+    videoCount: 0
   }),
   mounted() {
     this.db.length = 0;
@@ -962,6 +971,9 @@ export default {
         ];
         this.categories.unshift("All");
         this.categories.push("Unclassified");
+        this.currentFilterValue = 
+          (this.categories.findIndex(cat => cat === this.currentFilterValue) !== -1) 
+          ? this.currentFilterValue : "All";
         this.applyFilter(this.currentFilterValue);
       }
     },
