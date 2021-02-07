@@ -5,15 +5,20 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
+    db: [],
     file: { name: 'initial' },
     playlist: [],
     isPaused: true,
     leftPaneWidth: 0,
     filter: '',
+    currentFilterValue : 'All',
     categorization: '',
     sort: ''
   },
   mutations: {
+    updateDB(state, payload) {
+      state.db = payload;
+    },
     changeFile (state, payload) {
       state.file = payload;
     },
@@ -28,6 +33,9 @@ export default new Vuex.Store({
     },
     changeFilter (state, payload) {
       state.filter = payload;
+    },
+    changeCurrentFilterValue (state, payload) {
+      state.currentFilterValue = payload;
     },
     changeCategorization (state, payload) {
       state.categorization = payload;

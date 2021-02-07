@@ -171,7 +171,7 @@ const openFolderListener = (app, db) => {
             fs.unlinkSync(img);
           });
         });
-        event.sender.send('edit-file-dialog-reply', { isSuccess: true })
+        event.sender.send('edit-file-dialog-reply', { file: file, isSuccess: true })
       }).catch(err => {
         event.sender.send('edit-file-dialog-reply', { isSuccess: false })
       });
@@ -189,7 +189,7 @@ const openFolderListener = (app, db) => {
             fs.unlinkSync(img);
           });
         });
-        event.sender.send('delete-file-dialog-reply', { isSuccess: true })
+        event.sender.send('delete-file-dialog-reply', { id: file.id, isSuccess: true })
       }).catch(err => {
         event.sender.send('delete-file-dialog-reply', { isSuccess: false })
       });

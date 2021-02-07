@@ -140,9 +140,15 @@
             </template>
             <v-list dark dense>
               <v-list-item @click="clearFilters()">
-                <v-list-item-icon><v-icon>mdi-refresh</v-icon></v-list-item-icon>
+                <v-list-item-icon><v-icon>mdi-close-thick</v-icon></v-list-item-icon>
                 <v-list-item-content>
                   <v-list-item-title>Clear Filters</v-list-item-title>
+                </v-list-item-content>
+              </v-list-item>
+              <v-list-item @click="refreshDB()">
+                <v-list-item-icon><v-icon>mdi-refresh</v-icon></v-list-item-icon>
+                <v-list-item-content>
+                  <v-list-item-title>Refresh Database</v-list-item-title>
                 </v-list-item-content>
               </v-list-item>
             </v-list>
@@ -644,6 +650,7 @@
   font-size: 14px;
 }
 .capitalize {
+  font-size: 14px;
   text-transform: capitalize;
 }
 </style>
@@ -717,9 +724,15 @@ export default {
     videoCount: 0
   }),
   mounted() {
-    this.db.length = 0;
-    this.applySettings();
-    this.refreshDB();
+    this.currentFilterValue = this.$store.state.currentFilterValue;
+    if(this.$store.state.db && this.$store.state.db.length === 0) {
+      this.db.length = 0;
+      this.applySettings();
+      this.refreshDB();
+    } else if (this.$store.state.db) {
+      this.db = this.$store.state.db;
+      this.refreshDBData(false);
+    }
     ipcRenderer.on("get-settings-reply", (event, data) => {
       if(data) {
         console.log('SETTINGS', data);
@@ -781,7 +794,10 @@ export default {
       this.newFiles = data.files;
       this.completeDialog = true;
       this.resetValues();
-      this.refreshDB();
+      if (this.newFiles.length) { 
+        this.newFiles.forEach( file => {this.db.push(file)});
+      }
+      this.refreshDBData();
       this.isImporting = false;
     });
     ipcRenderer.on("edit-file-dialog-reply", (event, data) => {
@@ -790,7 +806,13 @@ export default {
         console.log('SUCCESS')
         this.editDialog = [];
         this.resetValues();
-        this.refreshDB();
+        if(data.file) {
+          const editedFileIndex = this.db.findIndex(file => file.id === data.file.id);
+          if (editedFileIndex !== -1) {
+            this.db[editedFileIndex] = data.file;
+          }
+        }
+        this.refreshDBData();
         this.isEditing = false;
       } else {
         this.isEditError = true;
@@ -803,7 +825,13 @@ export default {
         console.log('SUCCESS')
         this.deleteConfirmDialog = false;
         this.deleteResultDialog = true;
-        this.refreshDB();
+        if (data.id) {
+          const deletedFileIndex = this.db.findIndex(file => file.id === data.id);
+          if (deletedFileIndex !== -1) {
+            this.db.splice(deletedFileIndex, 1)
+          }
+        }
+        this.refreshDBData();
         this.isDeleting = false;
       } else {
         this.isDeleteError = true;
@@ -830,7 +858,7 @@ export default {
       ipcRenderer.send("saveSettings", { setting: 'filter', payload: '' });
       ipcRenderer.send("saveSettings", { setting: 'categorization', payload: '' });
       ipcRenderer.send("saveSettings", { setting: 'sort', payload: '' });
-      this.refreshDB();
+      this.refreshDBData(false);
     },
     applySettings() {
       ipcRenderer.send("getSettings");
@@ -840,9 +868,16 @@ export default {
       this.files = [];
       dbInstance.readAll().then((videos) => {
         this.db = [];
-        this.db = videos
+        this.db = videos;
+        this.$store.commit("updateDB", videos);
+        this.refreshDBData();
+      });
+    },
+    refreshDBData(updateDB = true) {
+        if(updateDB) { this.$store.commit('updateDB', this.db); }
+        this.db = this.db
         .map(vid => ({ ...vid, subgenre: vid.subgenre || "" }))
-        .sort((a, b) =>
+        .sort((a, b) => 
           a.displayName.localeCompare(b.displayName)
         );
         this.genres = this.getSetList("genre");
@@ -853,7 +888,6 @@ export default {
         this.filteredDB = [...this.db];
         this.filter = this.$store.state.filter;
         this.onFilterChange();
-      });
     },
     getSetList(param) {
       return [
@@ -978,7 +1012,8 @@ export default {
       }
     },
     applyFilter(value) {
-      this.currentFilterValue = value;
+      this.$store.commit('changeCurrentFilterValue', value);
+      this.currentFilterValue = this.$store.state.currentFilterValue;
       if (!value || value === "All") {
         this.resetDBDisplay();
         this.applyCategorization();
